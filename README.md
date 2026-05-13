@@ -4,6 +4,8 @@ Lightweight markdown → structured JSON parser. Designed for consuming AI-frien
 
 Runs in the browser, Cloudflare Workers, and anywhere that speaks JavaScript.
 
+https://docs-api.language-models.workers.dev/workers-ai/platform/pricing/index.md
+
 ## Output shape
 
 Headings become object keys. Content nests under them. Mixed sections (content + sub-headings) become arrays where strings, tables, and callouts are plain values and sub-sections are `{"Heading": ...}` entries.
@@ -89,7 +91,7 @@ New patterns are easy to add to `stripCruft()`.
 
 ## Demo
 
-Open `demo/index.html` — live editor with collapsible JSON tree and copy button.
+Open [`demo`](https://patrick-ring-motive.github.io/md-json/) — live editor with collapsible JSON tree and copy button.
 
 ## License
 
