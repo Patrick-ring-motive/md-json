@@ -29,15 +29,6 @@ Headings become object keys. Content nests under them. Mixed sections (content +
 **Leaf strings that are valid JSON** → parsed in place.  
 **Nav chrome** (Skip to content, Edit page, Was this helpful?) → stripped automatically.
 
-## Why not `markdown-to-json` (PyPI)?
-
-That lib exists and is fine for Python pipelines. This one:
-
-- Runs at the edge (Cloudflare Workers, ~37KB gzipped)
-- Runs in the browser with no server hop
-- Produces a flatter, more readable shape designed for LLM consumption
-- Handles GFM tables, multi-value cells, callout patterns, and nav cruft from real-world doc sites
-
 ## Parser
 
 Built on [`mdast-util-from-markdown`](https://github.com/syntax-tree/mdast-util-from-markdown) + [`micromark-extension-gfm`](https://github.com/micromark/micromark-extension-gfm) — the same CommonMark-compliant core that powers the `unified`/`remark` ecosystem. ~37KB gzipped with GFM support.
