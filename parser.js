@@ -218,10 +218,15 @@ function walk(nodes) {
 // ── LEAF JSON PARSING ─────────────────────────────────────────────────────────
 
 function tryJson(str) {
-  const t = str.trimStart()
+  const t = str.trim()
   if (t[0] !== '{' && t[0] !== '['){
-    if(!t.includes('•'))return str
-    return t.split('•').map(x=>x.trim()).filter(Boolean);
+    if(t.includes('•')){
+     return t.split('•').map(x=>x.trim()).filter(Boolean);
+    }
+   if(t.includes(':') && t.split(':').map(x=>x.trim()).filter(Boolean).length === 2){
+    return Object.fromEntries([t.split(':').map(x=>x.trim())]);
+   }
+   return str;
   }
   try { return JSON.parse(str) } catch (_) { return str }
 }
