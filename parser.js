@@ -271,8 +271,7 @@ function walk(nodes) {
 
 function tryJson(str) {
     const t = str.trimStart()
-    if (t[0] !== ‘{
-            ’ && t[0] !== ‘[’) return str
+    if (t[0] !== '{' && t[0] !== '[') return str
             try {
                 return JSON.parse(str)
             } catch (_) {
@@ -284,18 +283,18 @@ function tryJson(str) {
             if (Array.isArray(obj)) {
                 for (let i = 0; i < obj.length; i++) {
                     const v = obj[i]
-                    if (typeof v === ‘string’) {
+                    if (typeof v === 'string') {
                         const p = tryJson(v);
                         if (p !== v) obj[i] = p
-                    } else if (v && typeof v === ‘object’) tryParseLeaves(v)
+                    } else if (v && typeof v === 'object') tryParseLeaves(v)
                 }
-            } else if (obj && typeof obj === ‘object’) {
+            } else if (obj && typeof obj === 'object') {
                 for (const k of Object.keys(obj)) {
                     const v = obj[k]
-                    if (typeof v === ‘string’) {
+                    if (typeof v === 'string') {
                         const p = tryJson(v);
                         if (p !== v) obj[k] = p
-                    } else if (v && typeof v === ‘object’) tryParseLeaves(v)
+                    } else if (v && typeof v === 'object') tryParseLeaves(v)
                 }
             }
         }
@@ -319,7 +318,7 @@ function tryJson(str) {
             const fmMatch = markdown.match(/^—\r?\n([\s\S]*?)\r?\n—\r?\n?/)
             if (fmMatch) {
                 meta = {}
-                for (const line of fmMatch[1].split(’\n’)) {
+                for (const line of fmMatch[1].split('\n')) {
                     const kv = line.match(/^([\w-]+):\s*(.+)/)
                     if (kv) meta[kv[1]] = kv[2].trim()
                 }
@@ -336,7 +335,7 @@ function tryJson(str) {
 
             const items = walk(tree.children)
             for (const item of items) {
-                if (item && typeof item === ‘object’ && !Array.isArray(item)) {
+                if (item && typeof item === 'object' && !Array.isArray(item)) {
                     Object.assign(result, item)
                 }
             }
