@@ -7121,11 +7121,18 @@ function tryParseLeaves(obj) {
 }
 
 function tryJson(str) {
-  const t = str.trimStart()
-  if (t[0] !== '{' && t[0] !== '[') return str
-  try { return JSON.parse(str) } catch(_) { return str }
+  const t = str.trim()
+  if (t[0] !== '{' && t[0] !== '['){
+    if(t.includes('•')){
+     return t.split('•').map(x=>x.trim()).filter(Boolean);
+    }
+   if(t.includes(':') && t.split(':').map(x=>x.trim()).filter(Boolean).length === 2){
+    return Object.fromEntries([t.split(':').map(x=>x.trim())]);
+   }
+   return str;
+  }
+  try { return JSON.parse(str) } catch (_) { return str }
 }
-
 // ── JSON TREE RENDERER ────────────────────────────────────────────────────────
 
 function renderJson(data, depth = 0) {
