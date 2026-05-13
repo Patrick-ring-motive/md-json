@@ -10,6 +10,9 @@ import {
 
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
+const isArray = x => Array.isArray(x) || x instanceof Array;
+const isObject = x => x !== null && typeof x === 'object';
+const isString = x => x instanceof String || typeof x === 'string';
 
 const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [
@@ -48,7 +51,7 @@ function inlineText(nodes) {
         if (n.type === 'link') return inlineText(n.children).replace(/\s*↗\s*$/, '')
         if (n.children) return inlineText(n.children)
         return''
-    }).join``.trim()
+    }).join('').trim()
 }
 
 // ── TABLE NODE → array of objects (or 2D array if no headers) ────────────────
@@ -117,7 +120,7 @@ function classifyParagraph(node) {
 // ── MDAST WALKER → flat-key JSON ──────────────────────────────────────────────
 
 function hoistItem(item) {
-    if (item && typeof item === 'object' && !Array.isArray(item)) {
+    if (isObject(item) && !isArray(item)) {
         const keys = Object.keys(item)
         if (keys.length === 1 && (keys[0] === 'table' || keys[0] === 'list')) return item[keys[0]]
     }
@@ -240,7 +243,7 @@ function walk(nodes) {
 
             if (classified.type === 'boldCallout') {
                 const next = nodes[i + 1]
-                if (next && next.type === 'paragraph') {
+                if (next?.type === 'paragraph') {
                     push({
                         [classified.key]: inlineText(next.children)
                     })
@@ -280,21 +283,22 @@ function tryJson(str) {
         }
 
         function tryParseLeaves(obj) {
-            if (Array.isArray(obj)) {
-                for (let i = 0; i < obj.length; i++) {
+            if (isArray(obj)) {
+                const obj_length = obj.length;
+                for (let i = 0; i !== obj_length; ++i) {
                     const v = obj[i]
-                    if (typeof v === 'string') {
+                    if (isString(v)) {
                         const p = tryJson(v);
                         if (p !== v) obj[i] = p
-                    } else if (v && typeof v === 'object') tryParseLeaves(v)
+                    } else if (isObject(v)) tryParseLeaves(v)
                 }
-            } else if (obj && typeof obj === 'object') {
+            } else if (isObject(obj)) {
                 for (const k of Object.keys(obj)) {
                     const v = obj[k]
-                    if (typeof v === 'string') {
+                    if (isString(v)) {
                         const p = tryJson(v);
                         if (p !== v) obj[k] = p
-                    } else if (v && typeof v === 'object') tryParseLeaves(v)
+                    } else if (isObject(v)) tryParseLeaves(v)
                 }
             }
         }
@@ -335,7 +339,7 @@ function tryJson(str) {
 
             const items = walk(tree.children)
             for (const item of items) {
-                if (item && typeof item === 'object' && !Array.isArray(item)) {
+                if (isObject(item) && !isArray(item)) {
                     Object.assign(result, item)
                 }
             }
