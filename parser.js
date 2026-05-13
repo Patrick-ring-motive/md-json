@@ -219,7 +219,10 @@ function walk(nodes) {
 
 function tryJson(str) {
   const t = str.trimStart()
-  if (t[0] !== '{' && t[0] !== '[') return str
+  if (t[0] !== '{' && t[0] !== '['){
+    if(!t.includes('•'))return str
+    return t.split('•').map(x=>x.trim()).filter(Boolean);
+  }
   try { return JSON.parse(str) } catch (_) { return str }
 }
 
