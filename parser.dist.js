@@ -1,3 +1,6 @@
+// parser.dist.js — md-json
+// mdast + micromark-gfm bundled, no external dependencies required.
+// Use parser.js instead if you're bundling with esbuild/rollup/vite.
 
 (() => {
   var __defProp = Object.defineProperty;
@@ -6762,24 +6765,29 @@
     ];
   }
 
-  // entry4.js
-  globalThis._MdParserExports = { fromMarkdown, gfm, gfmFromMarkdown };
+  // entry_final.js
+  globalThis._MdParser = { fromMarkdown, gfm, gfmFromMarkdown };
 })();
 
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
-// Runs before mdast — removes rendered-nav lines baked into fetched .md files
+// Removes rendered-nav lines baked into fetched .md docs before parsing.
+
+const isArray = x => Array.isArray(x) || x instanceof Array
+const isObject = x => x !== null && typeof x === 'object'
+const isString = x => x instanceof String || typeof x === 'string'
+
+const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
+const NAV_RE = [
+  /^\[skip to content\]/i,
+  /^was this helpful\?/i,
+  /^#{1,6}\s+was this helpful\?/i,
+  /^\[\s*(edit\b.*|report issue|copy page)\s*\]/i,
+  /^\[\s*↗?\s*\]$/,
+  // lines consisting only of nav links e.g. "[ Edit](url) [ Issue](url)"
+  /^(\[\s*[^\]]*\]\([^)]+\)\s*)+$/,
+]
 
 function stripCruft(text) {
-  const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
-  const NAV_RE = [
-    /^\[skip to content\]/i,
-    /^was this helpful\?/i,
-    /^#{1,6}\s+was this helpful\?/i,
-    /^\[\s*(edit\b.*|report issue|copy page)\s*\]/i,
-    /^\[\s*↗?\s*\]$/,
-    // lines consisting only of nav links e.g. "[ Edit](url) [ Issue](url)"
-    /^(\[\s*[^\]]*\]\([^)]+\)\s*)+$/,
-  ]
   const lines = text.split('\n')
   const out = []
   let pastFirstHeading = false
@@ -6797,7 +6805,6 @@ function stripCruft(text) {
 }
 
 // ── INLINE TEXT EXTRACTION ────────────────────────────────────────────────────
-// Walks mdast inline nodes → plain string
 
 function inlineText(nodes) {
   if (!nodes) return ''
@@ -6809,42 +6816,38 @@ function inlineText(nodes) {
   }).join('').trim()
 }
 
-// ── TABLE NODE → array of objects (or 2d array if no headers) ─────────────────
+// ── TABLE NODE → array of objects (or 2D array if no headers) ────────────────
+
+function cellValue(text) {
+  const parts = text.split(/  +/).map(s => s.trim()).filter(Boolean)
+  return parts.length > 1 ? parts : text
+}
 
 function convertTable(node) {
-  const rows = node.children // tableRow nodes
+  const rows = node.children
   if (!rows.length) return []
 
   const headerRow = rows[0].children.map(cell => inlineText(cell.children))
   const hasHeaders = headerRow.some(h => h !== '')
 
-  const dataRows = rows.slice(1)
-
   if (!hasHeaders) {
     return rows.map(row => row.children.map(cell => cellValue(inlineText(cell.children))))
   }
 
-  return dataRows.map(row => {
+  return rows.slice(1).map(row => {
     const obj = {}
     row.children.forEach((cell, i) => {
       const header = headerRow[i] ?? ''
-      if (!header) return // skip blank-header cols (handled by prior merge logic)
+      if (!header) return
       obj[header] = cellValue(inlineText(cell.children))
     })
     return obj
   })
 }
 
-// Split multi-value cells (2+ spaces between values)
-function cellValue(text) {
-  const parts = text.split(/  +/).map(s => s.trim()).filter(Boolean)
-  return parts.length > 1 ? parts : text
-}
-
 // ── PARAGRAPH CLASSIFICATION ──────────────────────────────────────────────────
-// Detect CF-style callout patterns in paragraph nodes
 
-const CALLOUT_KEYWORDS = new Set(['note','warning','tip','info','caution'])
+const CALLOUT_KEYWORDS = new Set(['note', 'warning', 'tip', 'info', 'caution'])
 
 function classifyParagraph(node) {
   const children = node.children
@@ -6853,19 +6856,18 @@ function classifyParagraph(node) {
   if (children.length === 1 && children[0].type === 'text') {
     const lines = children[0].value.split('\n')
     if (lines.length >= 2 && CALLOUT_KEYWORDS.has(lines[0].trim().toLowerCase())) {
-      const keyword = lines[0].trim().toLowerCase()
-      const body = lines.slice(1).join(' ').trim()
-      return { type: 'callout', key: keyword, value: body }
+      return {
+        type: 'callout',
+        key: lines[0].trim().toLowerCase(),
+        value: lines.slice(1).join(' ').trim(),
+      }
     }
   }
 
-  // **Bold only** paragraph → informal callout heading with next sibling as body
-  // We flag it here; the walker handles consuming the next sibling
+  // **Bold only** paragraph → informal callout; walker consumes next sibling as body
   if (children.length === 1 && children[0].type === 'strong') {
     const text = inlineText(children[0].children)
-    if (text && !text.includes(' ') || text.split(' ').length <= 5) {
-      return { type: 'boldCallout', key: text }
-    }
+    if (text) return { type: 'boldCallout', key: text }
   }
 
   return { type: 'paragraph', value: inlineText(children) }
@@ -6873,28 +6875,25 @@ function classifyParagraph(node) {
 
 // ── MDAST WALKER → flat-key JSON ──────────────────────────────────────────────
 
+function hoistItem(item) {
+  if (isObject(item) && !isArray(item)) {
+    const keys = Object.keys(item)
+    if (keys.length === 1 && (keys[0] === 'table' || keys[0] === 'list')) return item[keys[0]]
+  }
+  return item
+}
+
+function resolve(items) {
+  if (!items.length) return null
+  if (items.length === 1) return hoistItem(items[0])
+  return items.map(hoistItem)
+}
+
 function walk(nodes) {
-  // Stack: [{level, key, items[]}]
-  // items: strings | arrays | objects | {key: value} sub-section entries
   const stack = [{ level: 0, key: null, items: [] }]
 
   function current() { return stack[stack.length - 1] }
   function push(item) { current().items.push(item) }
-
-  function hoistItem(item) {
-    // table and list: unwrap wrapper → plain array
-    if (item && typeof item === 'object' && !Array.isArray(item)) {
-      const keys = Object.keys(item)
-      if (keys.length === 1 && (keys[0] === 'table' || keys[0] === 'list')) return item[keys[0]]
-    }
-    return item
-  }
-
-  function resolve(items) {
-    if (!items.length) return null
-    if (items.length === 1) return hoistItem(items[0])
-    return items.map(hoistItem)
-  }
 
   function popTo(targetLevel) {
     while (stack.length > 1 && stack[stack.length - 1].level >= targetLevel) {
@@ -6907,44 +6906,41 @@ function walk(nodes) {
   while (i < nodes.length) {
     const node = nodes[i]
 
-    // ── Heading
     if (node.type === 'heading') {
-      const key = inlineText(node.children)
       popTo(node.depth)
-      stack.push({ level: node.depth, key, items: [] })
+      stack.push({ level: node.depth, key: inlineText(node.children), items: [] })
       i++; continue
     }
 
-    // ── Table (GFM)
     if (node.type === 'table') {
       push({ table: convertTable(node) })
       i++; continue
     }
 
-    // ── Code block
     if (node.type === 'code') {
       const block = { code: node.value }
       if (node.lang) block.lang = node.lang
-      if (node.lang === 'json') { try { block.parsed = JSON.parse(node.value) } catch(_){} }
+      if (node.lang === 'json') { try { block.parsed = JSON.parse(node.value) } catch (_) {} }
       push(block)
       i++; continue
     }
 
-    // ── Blockquote
     if (node.type === 'blockquote') {
-      const text = node.children.map(c => inlineText(c.children)).join(' ')
-      push({ note: text })
+      push({ note: node.children.map(c => inlineText(c.children)).join(' ') })
       i++; continue
     }
 
-    // ── List
     if (node.type === 'list') {
       const items = node.children.map(li => {
-        // listItem children are paragraphs; recurse if nested list present
         const parts = []
         for (const child of li.children) {
-          if (child.type === 'list') parts.push({ list: child.children.map(sli => inlineText(sli.children.flatMap(c => c.children || [c]))) })
-          else parts.push(inlineText(child.children))
+          if (child.type === 'list') {
+            parts.push(child.children.map(sli =>
+              inlineText(sli.children.flatMap(c => c.children || [c]))
+            ))
+          } else {
+            parts.push(inlineText(child.children))
+          }
         }
         return parts.length === 1 ? parts[0] : parts
       })
@@ -6952,13 +6948,10 @@ function walk(nodes) {
       i++; continue
     }
 
-    // ── ThematicBreak (ignore — also produced by --- frontmatter if not pre-stripped)
-    if (node.type === 'thematicBreak') { i++; continue }
+    if (node.type === 'thematicBreak' || node.type === 'html') {
+      i++; continue
+    }
 
-    // ── HTML block (ignore nav chrome)
-    if (node.type === 'html') { i++; continue }
-
-    // ── Paragraph
     if (node.type === 'paragraph') {
       const classified = classifyParagraph(node)
 
@@ -6968,14 +6961,11 @@ function walk(nodes) {
       }
 
       if (classified.type === 'boldCallout') {
-        // consume next sibling paragraph as the body if present
         const next = nodes[i + 1]
-        if (next && next.type === 'paragraph') {
-          const body = inlineText(next.children)
-          push({ [classified.key]: body })
+        if (next?.type === 'paragraph') {
+          push({ [classified.key]: inlineText(next.children) })
           i += 2; continue
         } else {
-          // no body — treat as plain paragraph
           push(inlineText(node.children))
           i++; continue
         }
@@ -6988,66 +6978,75 @@ function walk(nodes) {
     i++
   }
 
-  // drain stack
   popTo(0)
   return stack[0].items
 }
 
-// ── TOP-LEVEL PARSE ────────────────────────────────────────────────────────────
+// ── LEAF JSON PARSING ─────────────────────────────────────────────────────────
 
-function parseMarkdown(text) {
-  text = stripCruft(text)
+function tryJson(str) {
+  const t = str.trimStart()
+  if (t[0] !== '{' && t[0] !== '[') return str
+  try { return JSON.parse(str) } catch (_) { return str }
+}
+
+function tryParseLeaves(obj) {
+  if (isArray(obj)) {
+    const obj_length = obj.length
+    for (let i = 0; i !== obj_length; ++i) {
+      const v = obj[i]
+      if (isString(v)) { const p = tryJson(v); if (p !== v) obj[i] = p }
+      else if (isObject(v)) tryParseLeaves(v)
+    }
+  } else if (isObject(obj)) {
+    for (const k of Object.keys(obj)) {
+      const v = obj[k]
+      if (isString(v)) { const p = tryJson(v); if (p !== v) obj[k] = p }
+      else if (isObject(v)) tryParseLeaves(v)
+    }
+  }
+}
+
+// ── PUBLIC API ────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a markdown string into a structured JSON object.
+ *
+ * Headings become object keys. Content nests under them.
+ * Mixed sections (content + sub-headings) become arrays.
+ *
+ * @param {string} markdown
+ * @returns {object}
+ */
+export function parseMarkdown(markdown) {
+  markdown = stripCruft(markdown)
 
   let meta = null
-  const fmMatch = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/)
+  const fmMatch = markdown.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/)
   if (fmMatch) {
     meta = {}
     for (const line of fmMatch[1].split('\n')) {
       const kv = line.match(/^([\w-]+):\s*(.+)/)
       if (kv) meta[kv[1]] = kv[2].trim()
     }
-    text = text.slice(fmMatch[0].length)
+    markdown = markdown.slice(fmMatch[0].length)
   }
 
-  const tree = _MdParserExports.fromMarkdown(text, {
-    extensions: [_MdParserExports.gfm()],
-    mdastExtensions: [_MdParserExports.gfmFromMarkdown()]
+  const tree = _MdParser.fromMarkdown(markdown, {
+    extensions: [_MdParser.gfm()],
+    mdastExtensions: [_MdParser.gfmFromMarkdown()],
   })
 
   const result = {}
   if (meta) result.meta = meta
 
-  // walk top-level items — each {key: val} becomes a top-level key
   const items = walk(tree.children)
   for (const item of items) {
-    if (item && typeof item === 'object' && !Array.isArray(item)) {
+    if (isObject(item) && !isArray(item)) {
       Object.assign(result, item)
     }
   }
 
   tryParseLeaves(result)
   return result
-}
-
-// Recursively walk the result and attempt JSON.parse on string leaves
-function tryParseLeaves(obj) {
-  if (Array.isArray(obj)) {
-    for (let i = 0; i < obj.length; i++) {
-      const v = obj[i]
-      if (typeof v === 'string') { const p = tryJson(v); if (p !== v) obj[i] = p }
-      else if (v && typeof v === 'object') tryParseLeaves(v)
-    }
-  } else if (obj && typeof obj === 'object') {
-    for (const k of Object.keys(obj)) {
-      const v = obj[k]
-      if (typeof v === 'string') { const p = tryJson(v); if (p !== v) obj[k] = p }
-      else if (v && typeof v === 'object') tryParseLeaves(v)
-    }
-  }
-}
-
-function tryJson(str) {
-  const t = str.trimStart()
-  if (t[0] !== '{' && t[0] !== '[') return str
-  try { return JSON.parse(str) } catch(_) { return str }
 }
