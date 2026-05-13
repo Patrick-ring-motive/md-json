@@ -1,17 +1,17 @@
 import {
     fromMarkdown
-} from‘ mdast - util - from - markdown’
+} from 'mdast-util-from-markdown'
 import {
     gfm
-} from‘ micromark - extension - gfm’
+} from 'micromark-extension-gfm'
 import {
     gfmFromMarkdown
-} from‘ mdast - util - gfm’
+} from 'mdast-util-gfm'
 
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
 
-const NAV_EXACT = new Set([‘yesno’, ‘copy page’, ‘copy’])
+const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [
     /^[skip to content]/i,
     /^was this helpful?/i,
@@ -23,7 +23,7 @@ const NAV_RE = [
 ]
 
 function stripCruft(text) {
-    const lines = text.split(’\n’)
+    const lines = text.split('\n')
     const out = []
     let pastFirstHeading = false
     for (const line of lines) {
@@ -36,19 +36,19 @@ function stripCruft(text) {
         }
         out.push(line)
     }
-    return out.join(’\n’)
+    return out.join('\n')
 }
 
 // ── INLINE TEXT EXTRACTION ────────────────────────────────────────────────────
 
 function inlineText(nodes) {
-    if (!nodes) return‘’
+    if (!nodes) return''
     return nodes.map(n => {
-        if (n.type === ‘text’ || n.type === ‘inlineCode’) return n.value
-        if (n.type === ‘link’) return inlineText(n.children).replace(/\s*↗\s*$/, ‘’)
+        if (n.type === 'text' || n.type === 'inlineCode') return n.value
+        if (n.type === 'link') return inlineText(n.children).replace(/\s*↗\s*$/, '')
         if (n.children) return inlineText(n.children)
-        return‘’
-    }).join(’’).trim()
+        return''
+    }).join``.trim()
 }
 
 // ── TABLE NODE → array of objects (or 2D array if no headers) ────────────────
@@ -63,7 +63,7 @@ function convertTable(node) {
     if (!rows.length) return []
 
     const headerRow = rows[0].children.map(cell => inlineText(cell.children))
-    const hasHeaders = headerRow.some(h => h !== ‘’)
+    const hasHeaders = headerRow.some(h => h !== '')
 
     if (!hasHeaders) {
         return rows.map(row => row.children.map(cell => cellValue(inlineText(cell.children))))
@@ -72,7 +72,7 @@ function convertTable(node) {
     return rows.slice(1).map(row => {
         const obj = {}
         row.children.forEach((cell, i) => {
-            const header = headerRow[i] ?? ‘’
+            const header = headerRow[i] ?? ''
                 if (!header) return
             obj[header] = cellValue(inlineText(cell.children))
         })
@@ -82,34 +82,34 @@ function convertTable(node) {
 
 // ── PARAGRAPH CLASSIFICATION ──────────────────────────────────────────────────
 
-const CALLOUT_KEYWORDS = new Set([‘note’, ‘warning’, ‘tip’, ‘info’, ‘caution’])
+const CALLOUT_KEYWORDS = new Set(['note', 'warning', 'tip', 'info', 'caution'])
 
 function classifyParagraph(node) {
     const children = node.children
 
     // “Note\nBody text” — single text node whose first line is a callout keyword
-    if (children.length === 1 && children[0].type === ‘text’) {
-        const lines = children[0].value.split(’\n’)
+    if (children.length === 1 && children[0].type === 'text') {
+        const lines = children[0].value.split('\n')
         if (lines.length >= 2 && CALLOUT_KEYWORDS.has(lines[0].trim().toLowerCase())) {
             return {
-                type: ‘callout’,
+                type: 'callout',
                 key: lines[0].trim().toLowerCase(),
-                value: lines.slice(1).join(’’).trim(),
+                value: lines.slice(1).join('').trim(),
             }
         }
     }
 
     // **Bold only** paragraph → informal callout; walker consumes next sibling as body
-    if (children.length === 1 && children[0].type === ‘strong’) {
+    if (children.length === 1 && children[0].type === 'strong') {
         const text = inlineText(children[0].children)
         if (text) return {
-            type: ‘boldCallout’,
+            type: 'boldCallout',
             key: text
         }
     }
 
     return {
-        type: ‘paragraph’,
+        type: 'paragraph',
         value: inlineText(children)
     }
 }
@@ -117,9 +117,9 @@ function classifyParagraph(node) {
 // ── MDAST WALKER → flat-key JSON ──────────────────────────────────────────────
 
 function hoistItem(item) {
-    if (item && typeof item === ‘object’ && !Array.isArray(item)) {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
         const keys = Object.keys(item)
-        if (keys.length === 1 && (keys[0] === ‘table’ || keys[0] === ‘list’)) return item[keys[0]]
+        if (keys.length === 1 && (keys[0] === 'table' || keys[0] === 'list')) return item[keys[0]]
     }
     return item
 }
