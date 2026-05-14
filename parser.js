@@ -309,6 +309,37 @@ function tryParseLeaves(obj) {
   }
 }
 
+// ── COLLAPSE MUTUALLY-EXCLUSIVE OBJECT ARRAYS ────────────────────────────────
+// If an array contains only plain objects whose keys never overlap,
+// merge them into a single object.
+
+function collapseExclusiveArrays(obj) {
+  if (isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = collapseExclusiveArrays(obj[i])
+    }
+    if (obj.length > 1 && obj.every(v => isObject(v) && !isArray(v))) {
+      const seen = new Set()
+      let exclusive = true
+      for (const item of obj) {
+        for (const k of Object.keys(item)) {
+          if (seen.has(k)) { exclusive = false; break }
+          seen.add(k)
+        }
+        if (!exclusive) break
+      }
+      if (exclusive) return Object.assign({}, ...obj)
+    }
+    return obj
+  }
+  if (isObject(obj)) {
+    for (const k of Object.keys(obj)) {
+      obj[k] = collapseExclusiveArrays(obj[k])
+    }
+  }
+  return obj
+}
+
 // ── PUBLIC API ────────────────────────────────────────────────────────────────
 
 /**
@@ -350,5 +381,6 @@ export function parseMarkdown(markdown) {
   }
 
   tryParseLeaves(result)
+  collapseExclusiveArrays(result)
   return result
 }

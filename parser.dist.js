@@ -7423,7 +7423,6 @@
     gfmFromMarkdown
   };
 })();
-
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
 
@@ -7725,6 +7724,37 @@ function tryParseLeaves(obj) {
   }
 }
 
+// ── COLLAPSE MUTUALLY-EXCLUSIVE OBJECT ARRAYS ────────────────────────────────
+// If an array contains only plain objects whose keys never overlap,
+// merge them into a single object.
+
+function collapseExclusiveArrays(obj) {
+  if (isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = collapseExclusiveArrays(obj[i])
+    }
+    if (obj.length > 1 && obj.every(v => isObject(v) && !isArray(v))) {
+      const seen = new Set()
+      let exclusive = true
+      for (const item of obj) {
+        for (const k of Object.keys(item)) {
+          if (seen.has(k)) { exclusive = false; break }
+          seen.add(k)
+        }
+        if (!exclusive) break
+      }
+      if (exclusive) return Object.assign({}, ...obj)
+    }
+    return obj
+  }
+  if (isObject(obj)) {
+    for (const k of Object.keys(obj)) {
+      obj[k] = collapseExclusiveArrays(obj[k])
+    }
+  }
+  return obj
+}
+
 // ── PUBLIC API ────────────────────────────────────────────────────────────────
 
 /**
@@ -7736,7 +7766,7 @@ function tryParseLeaves(obj) {
  * @param {string} markdown
  * @returns {object}
  */
-export function parseMarkdown(markdown) {
+function parseMarkdown(markdown) {
   markdown = stripCruft(markdown)
 
   let meta = null
@@ -7750,9 +7780,9 @@ export function parseMarkdown(markdown) {
     markdown = markdown.slice(fmMatch[0].length)
   }
 
-  const tree = _MdParser.fromMarkdown(markdown, {
-    extensions: [_MdParser.gfm()],
-    mdastExtensions: [_MdParser.gfmFromMarkdown()],
+  const tree = fromMarkdown(markdown, {
+    extensions: [gfm()],
+    mdastExtensions: [gfmFromMarkdown()],
   })
 
   const result = {}
@@ -7766,5 +7796,6 @@ export function parseMarkdown(markdown) {
   }
 
   tryParseLeaves(result)
+  collapseExclusiveArrays(result)
   return result
 }

@@ -1,6 +1,6 @@
 {
   "name": "md-json-ai",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Lightweight markdown → structured JSON parser for AI-friendly markdown endpoints",
   "type": "module",
   "main": "./parser.js",

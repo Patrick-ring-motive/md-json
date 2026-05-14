@@ -57,4 +57,19 @@ describe('parseMarkdown', () => {
     const result = parseMarkdown('')
     assert.deepStrictEqual(result, {})
   })
+
+  it('collapses arrays of objects with mutually exclusive keys', () => {
+    const md = '# Section\n\n## A\n\nfoo\n\n## B\n\nbar\n\n## C\n\nbaz'
+    const result = parseMarkdown(md)
+    assert.deepStrictEqual(result, {
+      Section: { A: 'foo', B: 'bar', C: 'baz' }
+    })
+  })
+
+  it('preserves arrays when objects share keys', () => {
+    const md = '# Items\n\n| Name | Value |\n|------|-------|\n| a | 1 |\n| b | 2 |'
+    const result = parseMarkdown(md)
+    // table rows share keys, so they stay as an array
+    assert.ok(Array.isArray(result.Items))
+  })
 })

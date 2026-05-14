@@ -91,7 +91,7 @@ New patterns are easy to add to `stripCruft()`.
 
 ## Demo
 
-Open [`demo`](https://patrick-ring-motive.github.io/md-json/) — live editor with collapsible JSON tree and copy button.
+Open [`demo`](https://patrick-ring-motive.github.io/md-json-ai/) — live editor with collapsible JSON tree and copy button.
 
 ## License
 
