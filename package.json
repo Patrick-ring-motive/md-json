@@ -1,0 +1,49 @@
+{
+  "name": "md-json-ai",
+  "version": "1.0.0",
+  "description": "Lightweight markdown → structured JSON parser for AI-friendly markdown endpoints",
+  "type": "module",
+  "main": "./parser.js",
+  "exports": {
+    ".": {
+      "import": "./parser.js",
+      "default": "./parser.js"
+    }
+  },
+  "files": [
+    "parser.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test.js"
+  },
+  "keywords": [
+    "markdown",
+    "json",
+    "parser",
+    "mdast",
+    "ai",
+    "llm",
+    "structured-data",
+    "llms-txt"
+  ],
+  "author": "Patrick-ring-motive",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Patrick-ring-motive/md-json-ai.git"
+  },
+  "homepage": "https://github.com/Patrick-ring-motive/md-json-ai",
+  "bugs": {
+    "url": "https://github.com/Patrick-ring-motive/md-json-ai/issues"
+  },
+  "dependencies": {
+    "mdast-util-from-markdown": "^2.0.0",
+    "mdast-util-gfm": "^3.0.0",
+    "micromark-extension-gfm": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
