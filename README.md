@@ -1,4 +1,4 @@
-# md-json
+# md-json-ai
 
 Lightweight markdown → structured JSON parser. Designed for consuming AI-friendly markdown endpoints (`/index.md`, `llms.txt`, GitHub READMEs) and turning them into clean, navigable APIs — without a server.
 
