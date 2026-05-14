@@ -1,39 +1,60 @@
-import { describe, it } from 'node:test'
+import {
+  describe,
+  it
+} from 'node:test'
 import assert from 'node:assert/strict'
-import { parseMarkdown } from './parser.js'
+import {
+  parseMarkdown
+} from './parser.js'
 
 describe('parseMarkdown', () => {
   it('parses a simple heading + paragraph', () => {
     const result = parseMarkdown('# Hello\n\nWorld')
-    assert.deepStrictEqual(result, { Hello: 'World' })
+    assert.deepStrictEqual(result, {
+      Hello: 'World'
+    })
   })
 
   it('parses frontmatter into meta', () => {
     const md = '---\ntitle: Test\ndescription: A test doc\n---\n\n# Intro\n\nHello'
     const result = parseMarkdown(md)
-    assert.deepStrictEqual(result.meta, { title: 'Test', description: 'A test doc' })
+    assert.deepStrictEqual(result.meta, {
+      title: 'Test',
+      description: 'A test doc'
+    })
     assert.strictEqual(result.Intro, 'Hello')
   })
 
   it('parses nested headings', () => {
     const md = '# Top\n\n## Sub\n\nContent'
     const result = parseMarkdown(md)
-    assert.deepStrictEqual(result, { Top: { Sub: 'Content' } })
+    assert.deepStrictEqual(result, {
+      Top: {
+        Sub: 'Content'
+      }
+    })
   })
 
   it('parses lists', () => {
     const md = '# Items\n\n- one\n- two\n- three'
     const result = parseMarkdown(md)
-    assert.deepStrictEqual(result, { Items: ['one', 'two', 'three'] })
+    assert.deepStrictEqual(result, {
+      Items: ['one', 'two', 'three']
+    })
   })
 
   it('parses tables', () => {
     const md = '# Data\n\n| Name | Value |\n|------|-------|\n| a    | 1     |\n| b    | 2     |'
     const result = parseMarkdown(md)
     assert.deepStrictEqual(result, {
-      Data: [
-        { Name: 'a', Value: '1' },
-        { Name: 'b', Value: '2' },
+      Data: [{
+          Name: 'a',
+          Value: '1'
+        },
+        {
+          Name: 'b',
+          Value: '2'
+        },
       ]
     })
   })
@@ -42,7 +63,10 @@ describe('parseMarkdown', () => {
     const md = '# Example\n\n```js\nconsole.log("hi")\n```'
     const result = parseMarkdown(md)
     assert.deepStrictEqual(result, {
-      Example: { code: 'console.log("hi")', lang: 'js' }
+      Example: {
+        code: 'console.log("hi")',
+        lang: 'js'
+      }
     })
   })
 
@@ -62,7 +86,11 @@ describe('parseMarkdown', () => {
     const md = '# Section\n\n## A\n\nfoo\n\n## B\n\nbar\n\n## C\n\nbaz'
     const result = parseMarkdown(md)
     assert.deepStrictEqual(result, {
-      Section: { A: 'foo', B: 'bar', C: 'baz' }
+      Section: {
+        A: 'foo',
+        B: 'bar',
+        C: 'baz'
+      }
     })
   })
 
