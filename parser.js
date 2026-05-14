@@ -1,6 +1,12 @@
-import { fromMarkdown } from 'mdast-util-from-markdown'
-import { gfm } from 'micromark-extension-gfm'
-import { gfmFromMarkdown } from 'mdast-util-gfm'
+import {
+  fromMarkdown
+} from 'mdast-util-from-markdown'
+import {
+  gfm
+} from 'micromark-extension-gfm'
+import {
+  gfmFromMarkdown
+} from 'mdast-util-gfm'
 
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
@@ -100,10 +106,16 @@ function classifyParagraph(node) {
   // **Bold only** paragraph → informal callout; walker consumes next sibling as body
   if (children.length === 1 && children[0].type === 'strong') {
     const text = inlineText(children[0].children)
-    if (text) return { type: 'boldCallout', key: text }
+    if (text) return {
+      type: 'boldCallout',
+      key: text
+    }
   }
 
-  return { type: 'paragraph', value: inlineText(children) }
+  return {
+    type: 'paragraph',
+    value: inlineText(children)
+  }
 }
 
 // ── MDAST WALKER → flat-key JSON ──────────────────────────────────────────────
@@ -123,15 +135,26 @@ function resolve(items) {
 }
 
 function walk(nodes) {
-  const stack = [{ level: 0, key: null, items: [] }]
+  const stack = [{
+    level: 0,
+    key: null,
+    items: []
+  }]
 
-  function current() { return stack[stack.length - 1] }
-  function push(item) { current().items.push(item) }
+  function current() {
+    return stack[stack.length - 1]
+  }
+
+  function push(item) {
+    current().items.push(item)
+  }
 
   function popTo(targetLevel) {
     while (stack.length > 1 && stack[stack.length - 1].level >= targetLevel) {
       const finished = stack.pop()
-      current().items.push({ [finished.key]: resolve(finished.items) })
+      current().items.push({
+        [finished.key]: resolve(finished.items)
+      })
     }
   }
 
@@ -141,26 +164,44 @@ function walk(nodes) {
 
     if (node.type === 'heading') {
       popTo(node.depth)
-      stack.push({ level: node.depth, key: inlineText(node.children), items: [] })
-      i++; continue
+      stack.push({
+        level: node.depth,
+        key: inlineText(node.children),
+        items: []
+      })
+      i++;
+      continue
     }
 
     if (node.type === 'table') {
-      push({ table: convertTable(node) })
-      i++; continue
+      push({
+        table: convertTable(node)
+      })
+      i++;
+      continue
     }
 
     if (node.type === 'code') {
-      const block = { code: node.value }
+      const block = {
+        code: node.value
+      }
       if (node.lang) block.lang = node.lang
-      if (node.lang === 'json') { try { block.parsed = JSON.parse(node.value) } catch (_) {} }
+      if (node.lang === 'json') {
+        try {
+          block.parsed = JSON.parse(node.value)
+        } catch (_) {}
+      }
       push(block)
-      i++; continue
+      i++;
+      continue
     }
 
     if (node.type === 'blockquote') {
-      push({ note: node.children.map(c => inlineText(c.children)).join(' ') })
-      i++; continue
+      push({
+        note: node.children.map(c => inlineText(c.children)).join(' ')
+      })
+      i++;
+      continue
     }
 
     if (node.type === 'list') {
@@ -177,35 +218,47 @@ function walk(nodes) {
         }
         return parts.length === 1 ? parts[0] : parts
       })
-      push({ list: items })
-      i++; continue
+      push({
+        list: items
+      })
+      i++;
+      continue
     }
 
     if (node.type === 'thematicBreak' || node.type === 'html') {
-      i++; continue
+      i++;
+      continue
     }
 
     if (node.type === 'paragraph') {
       const classified = classifyParagraph(node)
 
       if (classified.type === 'callout') {
-        push({ [classified.key]: classified.value })
-        i++; continue
+        push({
+          [classified.key]: classified.value
+        })
+        i++;
+        continue
       }
 
       if (classified.type === 'boldCallout') {
         const next = nodes[i + 1]
         if (next?.type === 'paragraph') {
-          push({ [classified.key]: inlineText(next.children) })
-          i += 2; continue
+          push({
+            [classified.key]: inlineText(next.children)
+          })
+          i += 2;
+          continue
         } else {
           push(inlineText(node.children))
-          i++; continue
+          i++;
+          continue
         }
       }
 
       if (classified.value) push(classified.value)
-      i++; continue
+      i++;
+      continue
     }
 
     i++
@@ -219,16 +272,20 @@ function walk(nodes) {
 
 function tryJson(str) {
   const t = str.trim()
-  if (t[0] !== '{' && t[0] !== '['){
-    if(t.includes('•')){
-     return t.split('•').map(x=>x.trim()).filter(Boolean);
+  if (t[0] !== '{' && t[0] !== '[') {
+    if (t.includes('•')) {
+      return t.split('•').map(x => x.trim()).filter(Boolean);
     }
-   if(t.includes(':') && t.split(':').map(x=>x.trim()).filter(Boolean).length === 2){
-    return Object.fromEntries([t.split(':').map(x=>x.trim())]);
-   }
-   return str;
+    if (t.includes(':') && t.split(':').map(x => x.trim()).filter(Boolean).length === 2) {
+      return Object.fromEntries([t.split(':').map(x => x.trim())]);
+    }
+    return str;
   }
-  try { return JSON.parse(str) } catch (_) { return str }
+  try {
+    return JSON.parse(str)
+  } catch (_) {
+    return str
+  }
 }
 
 function tryParseLeaves(obj) {
@@ -236,14 +293,18 @@ function tryParseLeaves(obj) {
     const obj_length = obj.length
     for (let i = 0; i !== obj_length; ++i) {
       const v = obj[i]
-      if (isString(v)) { const p = tryJson(v); if (p !== v) obj[i] = p }
-      else if (isObject(v)) tryParseLeaves(v)
+      if (isString(v)) {
+        const p = tryJson(v);
+        if (p !== v) obj[i] = p
+      } else if (isObject(v)) tryParseLeaves(v)
     }
   } else if (isObject(obj)) {
     for (const k of Object.keys(obj)) {
       const v = obj[k]
-      if (isString(v)) { const p = tryJson(v); if (p !== v) obj[k] = p }
-      else if (isObject(v)) tryParseLeaves(v)
+      if (isString(v)) {
+        const p = tryJson(v);
+        if (p !== v) obj[k] = p
+      } else if (isObject(v)) tryParseLeaves(v)
     }
   }
 }
