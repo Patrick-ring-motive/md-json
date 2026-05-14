@@ -1,8 +1,16 @@
 // parser.dist.js — md-json
 // mdast + micromark-gfm bundled, no external dependencies required.
 // Use parser.js instead if you're bundling with esbuild/rollup/vite.
+// parser.dist.js — md-json
+// mdast + micromark-gfm bundled, no external dependencies required.
+// Use parser.js instead if you're bundling with esbuild/rollup/vite.
+
+const isArray = x => Array.isArray(x) || x instanceof Array;
+const isObject = x => x !== null && typeof x === 'object';
+const isString = x => typeof x === 'string' || x instanceof String;
 
 (() => {
+
   var __defProp = Object.defineProperty;
   var __export = (target, all2) => {
     for (var name in all2)
@@ -34,7 +42,7 @@
         return all(value.children, includeImageAlt, includeHtml);
       }
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       return all(value, includeImageAlt, includeHtml);
     }
     return "";
@@ -50,13 +58,14 @@
   }
 
   function node(value) {
-    return Boolean(value && typeof value === "object");
+    return Boolean(isObject(value));
   }
 
   // node_modules/decode-named-character-reference/index.dom.js
-  var element = document.createElement("i");
+ 
 
   function decodeNamedCharacterReference(value) {
+    var element = document.createElement("i");
     const characterReference2 = "&" + value + ";";
     element.innerHTML = characterReference2;
     const character = element.textContent;
@@ -127,7 +136,7 @@
           constructs(
             // @ts-expect-error Looks like a list.
             left[code2],
-            Array.isArray(value) ? value : value ? [value] : []
+            isArray(value) ? value : value ? [value] : []
           );
         }
       }
@@ -4128,7 +4137,7 @@
         let constructIndex;
         let currentConstruct;
         let info;
-        return Array.isArray(constructs2) ? (
+        return isArray(constructs2) ? (
           /* c8 ignore next 1 */
           handleListOfConstructs(constructs2)
         ) : "tokenize" in constructs2 ? (
@@ -4148,8 +4157,8 @@
             const list2 = [
               // To do: add more extension tests.
               /* c8 ignore next 2 */
-              ...Array.isArray(left) ? left : left ? [left] : [],
-              ...Array.isArray(all2) ? all2 : all2 ? [all2] : []
+              ...isArray(left) ? left : left ? [left] : [],
+              ...isArray(all2) ? all2 : all2 ? [all2] : []
             ];
             return handleListOfConstructs(list2)(code2);
           }
@@ -4363,7 +4372,7 @@
       let startPosition;
       let endPosition;
       let code2;
-      value = buffer + (typeof value === "string" ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
+      value = buffer + (isString(value) ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
       startPosition = 0;
       buffer = "";
       if (start) {
@@ -5194,7 +5203,7 @@
     let index2 = -1;
     while (++index2 < extensions.length) {
       const value = extensions[index2];
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         configure(combined, value);
       } else {
         extension(combined, value);
@@ -6709,7 +6718,7 @@
         return castFactory(test);
       }
       if (typeof test === "object") {
-        return Array.isArray(test) ? anyFactory(test) : (
+        return isArray(test) ? anyFactory(test) : (
           // Cast because `ReadonlyArray` goes into the above but `isArray`
           // narrows to `Array`.
           propertiesFactory(
@@ -6871,7 +6880,7 @@
   }
 
   function toResult(value) {
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       return value;
     }
     if (typeof value === "number") {
@@ -6929,7 +6938,7 @@
           stack: [...parents, node2]
         };
         let value = replace2(...match, matchObject);
-        if (typeof value === "string") {
+        if (isString(value)) {
           value = value.length > 0 ? {
             type: "text",
             value
@@ -6944,7 +6953,7 @@
               value: node2.value.slice(start, position2)
             });
           }
-          if (Array.isArray(value)) {
+          if (isArray(value)) {
             nodes.push(...value);
           } else if (value) {
             nodes.push(value);
@@ -6974,10 +6983,10 @@
 
   function toPairs(tupleOrList) {
     const result = [];
-    if (!Array.isArray(tupleOrList)) {
+    if (!isArray(tupleOrList)) {
       throw new TypeError("Expected find and replace tuple or list of tuples");
     }
-    const list2 = !tupleOrList[0] || Array.isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
+    const list2 = !tupleOrList[0] || isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
     let index2 = -1;
     while (++index2 < list2.length) {
       const tuple = list2[index2];
@@ -7426,9 +7435,7 @@
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
 
-const isArray = x => Array.isArray(x) || x instanceof Array
-const isObject = x => x !== null && typeof x === 'object'
-const isString = x => x instanceof String || typeof x === 'string'
+
 
 const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [

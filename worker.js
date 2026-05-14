@@ -1,8 +1,12 @@
-// parser.dist.js — md-json
 // mdast + micromark-gfm bundled, no external dependencies required.
 // Use parser.js instead if you're bundling with esbuild/rollup/vite.
 
+const isArray = x => Array.isArray(x) || x instanceof Array;
+const isObject = x => x !== null && typeof x === 'object';
+const isString = x => typeof x === 'string' || x instanceof String;
+
 (() => {
+
   var __defProp = Object.defineProperty;
   var __export = (target, all2) => {
     for (var name in all2)
@@ -34,7 +38,7 @@
         return all(value.children, includeImageAlt, includeHtml);
       }
     }
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       return all(value, includeImageAlt, includeHtml);
     }
     return "";
@@ -50,7 +54,21 @@
   }
 
   function node(value) {
-    return Boolean(value && typeof value === "object");
+    return Boolean(isObject(value));
+  }
+
+  // node_modules/decode-named-character-reference/index.dom.js
+ 
+
+  function decodeNamedCharacterReference(value) {
+    var element = document.createElement("i");
+    const characterReference2 = "&" + value + ";";
+    element.innerHTML = characterReference2;
+    const character = element.textContent;
+    if (character.charCodeAt(character.length - 1) === 59 && value !== "semi") {
+      return false;
+    }
+    return character === characterReference2 ? false : character;
   }
 
   // node_modules/micromark-util-chunked/index.js
@@ -114,7 +132,7 @@
           constructs(
             // @ts-expect-error Looks like a list.
             left[code2],
-            Array.isArray(value) ? value : value ? [value] : []
+            isArray(value) ? value : value ? [value] : []
           );
         }
       }
@@ -4115,7 +4133,7 @@
         let constructIndex;
         let currentConstruct;
         let info;
-        return Array.isArray(constructs2) ? (
+        return isArray(constructs2) ? (
           /* c8 ignore next 1 */
           handleListOfConstructs(constructs2)
         ) : "tokenize" in constructs2 ? (
@@ -4135,8 +4153,8 @@
             const list2 = [
               // To do: add more extension tests.
               /* c8 ignore next 2 */
-              ...Array.isArray(left) ? left : left ? [left] : [],
-              ...Array.isArray(all2) ? all2 : all2 ? [all2] : []
+              ...isArray(left) ? left : left ? [left] : [],
+              ...isArray(all2) ? all2 : all2 ? [all2] : []
             ];
             return handleListOfConstructs(list2)(code2);
           }
@@ -4350,7 +4368,7 @@
       let startPosition;
       let endPosition;
       let code2;
-      value = buffer + (typeof value === "string" ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
+      value = buffer + (isString(value) ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
       startPosition = 0;
       buffer = "";
       if (start) {
@@ -5181,7 +5199,7 @@
     let index2 = -1;
     while (++index2 < extensions.length) {
       const value = extensions[index2];
-      if (Array.isArray(value)) {
+      if (isArray(value)) {
         configure(combined, value);
       } else {
         extension(combined, value);
@@ -6696,7 +6714,7 @@
         return castFactory(test);
       }
       if (typeof test === "object") {
-        return Array.isArray(test) ? anyFactory(test) : (
+        return isArray(test) ? anyFactory(test) : (
           // Cast because `ReadonlyArray` goes into the above but `isArray`
           // narrows to `Array`.
           propertiesFactory(
@@ -6858,7 +6876,7 @@
   }
 
   function toResult(value) {
-    if (Array.isArray(value)) {
+    if (isArray(value)) {
       return value;
     }
     if (typeof value === "number") {
@@ -6916,7 +6934,7 @@
           stack: [...parents, node2]
         };
         let value = replace2(...match, matchObject);
-        if (typeof value === "string") {
+        if (isString(value)) {
           value = value.length > 0 ? {
             type: "text",
             value
@@ -6931,7 +6949,7 @@
               value: node2.value.slice(start, position2)
             });
           }
-          if (Array.isArray(value)) {
+          if (isArray(value)) {
             nodes.push(...value);
           } else if (value) {
             nodes.push(value);
@@ -6961,10 +6979,10 @@
 
   function toPairs(tupleOrList) {
     const result = [];
-    if (!Array.isArray(tupleOrList)) {
+    if (!isArray(tupleOrList)) {
       throw new TypeError("Expected find and replace tuple or list of tuples");
     }
-    const list2 = !tupleOrList[0] || Array.isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
+    const list2 = !tupleOrList[0] || isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
     let index2 = -1;
     while (++index2 < list2.length) {
       const tuple = list2[index2];
@@ -7404,19 +7422,16 @@
   }
 
   // entry_final.js
-  globalThis._MdParser = {
+  Object.assign(globalThis,{
     fromMarkdown,
     gfm,
     gfmFromMarkdown
-  };
+  });
 })();
-
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
 
-const isArray = x => Array.isArray(x) || x instanceof Array
-const isObject = x => x !== null && typeof x === 'object'
-const isString = x => x instanceof String || typeof x === 'string'
+
 
 const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [
@@ -7674,10 +7689,15 @@ function walk(nodes) {
 // ── LEAF JSON PARSING ─────────────────────────────────────────────────────────
 
 function tryJson(str) {
-  const t = str.trimStart()
+  const t = str.trim()
   if (t[0] !== '{' && t[0] !== '[') {
-    if (!t.includes('•')) return str
-    return t.split('•').map(x => x.trim()).filter(Boolean);
+    if (t.includes('•')) {
+      return t.split('•').map(x => x.trim()).filter(Boolean);
+    }
+    if (t.includes(':') && t.split(':').map(x => x.trim()).filter(Boolean).length === 2) {
+      return Object.fromEntries([t.split(':').map(x => x.trim())]);
+    }
+    return str;
   }
   try {
     return JSON.parse(str)
@@ -7707,6 +7727,37 @@ function tryParseLeaves(obj) {
   }
 }
 
+// ── COLLAPSE MUTUALLY-EXCLUSIVE OBJECT ARRAYS ────────────────────────────────
+// If an array contains only plain objects whose keys never overlap,
+// merge them into a single object.
+
+function collapseExclusiveArrays(obj) {
+  if (isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      obj[i] = collapseExclusiveArrays(obj[i])
+    }
+    if (obj.length > 1 && obj.every(v => isObject(v) && !isArray(v))) {
+      const seen = new Set()
+      let exclusive = true
+      for (const item of obj) {
+        for (const k of Object.keys(item)) {
+          if (seen.has(k)) { exclusive = false; break }
+          seen.add(k)
+        }
+        if (!exclusive) break
+      }
+      if (exclusive) return Object.assign({}, ...obj)
+    }
+    return obj
+  }
+  if (isObject(obj)) {
+    for (const k of Object.keys(obj)) {
+      obj[k] = collapseExclusiveArrays(obj[k])
+    }
+  }
+  return obj
+}
+
 // ── PUBLIC API ────────────────────────────────────────────────────────────────
 
 /**
@@ -7718,7 +7769,7 @@ function tryParseLeaves(obj) {
  * @param {string} markdown
  * @returns {object}
  */
-export function parseMarkdown(markdown) {
+function parseMarkdown(markdown) {
   markdown = stripCruft(markdown)
 
   let meta = null
@@ -7732,9 +7783,9 @@ export function parseMarkdown(markdown) {
     markdown = markdown.slice(fmMatch[0].length)
   }
 
-  const tree = _MdParser.fromMarkdown(markdown, {
-    extensions: [_MdParser.gfm()],
-    mdastExtensions: [_MdParser.gfmFromMarkdown()],
+  const tree = fromMarkdown(markdown, {
+    extensions: [gfm()],
+    mdastExtensions: [gfmFromMarkdown()],
   })
 
   const result = {}
@@ -7748,34 +7799,15 @@ export function parseMarkdown(markdown) {
   }
 
   tryParseLeaves(result)
+  collapseExclusiveArrays(result)
   return result
 }
 
-const CF_DOCS_BASE = 'https://developers.cloudflare.com'
-
-function mdPath(pathname) {
-  // already ends in .md → use as-is
-  if (pathname.endsWith('.md')) return pathname
-  // strip trailing slash, append /index.md
-  return pathname.replace(/\/$/, '') + '/index.md'
-}
 
 export default {
   async fetch(req) {
-    const url = new URL(req.url)
 
-    // Health check
-    if (url.pathname === '/') {
-      return new Response(JSON.stringify({
-        name: 'md-json',
-        usage: '/{cloudflare-docs-path}',
-        example: '/workers-ai/platform/pricing/index.md',
-      }, null, 2), {
-        headers: corsJson(),
-      })
-    }
-
-    const target = CF_DOCS_BASE + mdPath(url.pathname)
+    const target = new URL(req.url).searchParams.get('url') || req.headers.get('url') || (await req.json()).url;
 
     let md
     try {
@@ -7810,9 +7842,7 @@ function corsJson() {
 }
 
 function errResponse(status, message) {
-  return new Response(JSON.stringify({
-    error: message
-  }), {
+  return new Response(JSON.stringify({ error: message }), {
     status,
     headers: corsJson(),
   })

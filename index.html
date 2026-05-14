@@ -263,6 +263,10 @@
   </footer>
 
   <script>
+
+const isArray = x => Array.isArray(x) || x instanceof Array
+const isObject = x => x !== null && typeof x === 'object'
+const isString = x => x instanceof String || typeof x === 'string'
     (() => {
       var __defProp = Object.defineProperty;
       var __export = (target, all2) => {
@@ -311,7 +315,7 @@
       }
 
       function node(value) {
-        return Boolean(value && typeof value === "object");
+        return Boolean(isObject(value));
       }
 
       // node_modules/decode-named-character-reference/index.dom.js
@@ -4624,7 +4628,7 @@
           let startPosition;
           let endPosition;
           let code2;
-          value = buffer + (typeof value === "string" ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
+          value = buffer + (isString(value) ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
           startPosition = 0;
           buffer = "";
           if (start) {
@@ -7190,7 +7194,7 @@
               stack: [...parents, node2]
             };
             let value = replace2(...match, matchObject);
-            if (typeof value === "string") {
+            if (isString(value)) {
               value = value.length > 0 ? {
                 type: "text",
                 value
@@ -7691,9 +7695,7 @@
    // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.
 
-const isArray = x => Array.isArray(x) || x instanceof Array
-const isObject = x => x !== null && typeof x === 'object'
-const isString = x => x instanceof String || typeof x === 'string'
+
 
 const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [

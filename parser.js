@@ -13,7 +13,7 @@ import {
 
 const isArray = x => Array.isArray(x) || x instanceof Array
 const isObject = x => x !== null && typeof x === 'object'
-const isString = x => x instanceof String || typeof x === 'string'
+const isString = x => typeof x === 'string' || x instanceof String
 
 const NAV_EXACT = new Set(['yesno', 'copy page', 'copy'])
 const NAV_RE = [
