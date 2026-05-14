@@ -7417,11 +7417,11 @@
   }
 
   // entry_final.js
-  globalThis._MdParser = {
+  Object.assign(globalThis,{
     fromMarkdown,
     gfm,
     gfmFromMarkdown
-  };
+  });
 })();
 // ── NAV CRUFT STRIPPER ────────────────────────────────────────────────────────
 // Removes rendered-nav lines baked into fetched .md docs before parsing.

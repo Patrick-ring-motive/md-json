@@ -7678,11 +7678,11 @@
       }
 
       // entry4.js
-      globalThis._MdParserExports = {
-        fromMarkdown,
-        gfm,
-        gfmFromMarkdown
-      };
+  Object.assign(globalThis,{
+    fromMarkdown,
+    gfm,
+    gfmFromMarkdown
+  });
     })();
 
   </script>
