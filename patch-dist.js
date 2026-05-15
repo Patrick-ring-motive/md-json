@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs'
+
+import {
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
 
 const file = process.argv[2] || 'parser.dist.js'
 let src = readFileSync(file, 'utf8')
