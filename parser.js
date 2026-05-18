@@ -323,7 +323,10 @@ function collapseExclusiveArrays(obj) {
       let exclusive = true
       for (const item of obj) {
         for (const k of Object.keys(item)) {
-          if (seen.has(k)) { exclusive = false; break }
+          if (seen.has(k)) {
+            exclusive = false;
+            break
+          }
           seen.add(k)
         }
         if (!exclusive) break
